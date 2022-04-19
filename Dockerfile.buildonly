@@ -1,4 +1,4 @@
-ARG SERVERBASE=21.06-py3
+ARG SERVERBASE=22.03-py3
 
 FROM nvcr.io/nvidia/pytorch:${SERVERBASE} AS builder
 
