@@ -1,4 +1,4 @@
 #!/bin/bash
 
-export TRITON_VERSION="22.03-py3"
+export TRITON_VERSION="22.07-py3"
 
