@@ -1,43 +1,46 @@
-ARG SERVERBASE=22.07-py3
+ARG SERVERBASE=23.04-py3
 
 FROM nvcr.io/nvidia/pytorch:${SERVERBASE} AS builder
 
 ENV FORCE_CUDA=1
 ARG LIB_WITH_CUDA=ON
-ARG NPROC=4
+ARG NPROC=10
+ARG TorchPATH=/usr/local/lib/python3.8/dist-packages/torch/share/cmake
 
 RUN git clone https://github.com/rusty1s/pytorch_cluster.git
 RUN pushd pytorch_cluster &&\
     mkdir build && pushd build &&\
-    cmake -DCMAKE_PREFIX_PATH=/opt/conda/lib/python3.8/site-packages/torch -DWITH_CUDA=${LIB_WITH_CUDA} .. &&\
+    cmake -DCMAKE_PREFIX_PATH=${TorchPATH} -DWITH_CUDA=${LIB_WITH_CUDA} .. &&\
     make -j ${NPROC} && mv *.so /workspace/ && popd &&\
     popd
 
 RUN git clone https://github.com/rusty1s/pytorch_scatter.git
 RUN pushd pytorch_scatter &&\
     mkdir build && pushd build &&\
-    cmake -DCMAKE_PREFIX_PATH=/opt/conda/lib/python3.8/site-packages/torch -DWITH_CUDA=${LIB_WITH_CUDA} .. &&\
+    cmake -DCMAKE_PREFIX_PATH=${TorchPATH} -DWITH_CUDA=${LIB_WITH_CUDA} .. &&\
     make -j ${NPROC} && mv *.so /workspace/ && popd &&\
     popd
 
 RUN git clone https://github.com/rusty1s/pytorch_spline_conv.git
 RUN pushd pytorch_spline_conv &&\
     mkdir build && pushd build &&\
-    cmake -DCMAKE_PREFIX_PATH=/opt/conda/lib/python3.8/site-packages/torch -DWITH_CUDA=${LIB_WITH_CUDA} .. &&\
+    cmake -DCMAKE_PREFIX_PATH=${TorchPATH} -DWITH_CUDA=${LIB_WITH_CUDA} .. &&\
     make -j ${NPROC} && mv *.so /workspace/ && popd &&\
     popd
 
-RUN git clone https://github.com/rusty1s/pytorch_sparse.git -b 0.6.10
+RUN git clone --recurse-submodules https://github.com/rusty1s/pytorch_sparse.git
 RUN pushd pytorch_sparse &&\
     mkdir build && pushd build &&\
-    cmake -DCMAKE_PREFIX_PATH=/opt/conda/lib/python3.8/site-packages/torch -DWITH_CUDA=${LIB_WITH_CUDA} .. &&\
+    cmake -DCMAKE_PREFIX_PATH=${TorchPATH} -DWITH_CUDA=${LIB_WITH_CUDA} .. &&\
     make -j ${NPROC} && mv *.so /workspace/ && popd &&\
     popd
 
 RUN git clone https://github.com/pyg-team/pytorch_geometric.git
+RUN python -m pip install --upgrade pip
 RUN pushd pytorch_geometric && pip install -e . && popd
 
-FROM nvcr.io/nvidia/tritonserver:${SERVERBASE}
+#FROM nvcr.io/nvidia/tritonserver:${SERVERBASE}
+FROM yongbinfeng/tritonserver:23.04-PTDetermined
 
 ENV LD_LIBRARY_PATH="/opt/tritonserver/backends/pytorch:/usr/local/cuda/compat/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
 
